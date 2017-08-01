@@ -5,10 +5,10 @@
 Python-based Simulations of Chemistry Framework
 ===============================================
 
-2017-04-25
+2017-07-24
 
 * [1.4 alpha](https://github.com/sunqm/pyscf/tree/dev)
-* [Stable release 1.3](https://github.com/sunqm/pyscf/releases/tag/v1.3)
+* [Stable release 1.3.3](https://github.com/sunqm/pyscf/releases/tag/v1.3.3)
 * [Changelog](../master/CHANGELOG)
 * [Documentation](http://www.pyscf.org) ([PDF](http://www.sunqm.net/pyscf/files/pdf/PySCF-1.1.pdf))
 * [Installation](#installation)
@@ -27,13 +27,18 @@ Installation
 
 * Compile core module
 
-        cd lib
+        cd pyscf/lib
         mkdir build; cd build
         cmake ..
         make
 
-* To make python be able to find pyscf, edit environment variable
-  `PYTHONPATH`, e.g.  if pyscf is installed in /opt/pyscf
+  Note during the compilation, external libraries (libcint, libxc, xcfun) will
+  be downloaded and installed.  If you want to disable the automatic
+  downloading, the [document] (http://sunqm.github.io/pyscf/install.html#installation-without-network)
+  shows an instruction to manually build these packages.
+
+* To make python find pyscf, edit environment variable `PYTHONPATH`,
+  e.g.  if pyscf is installed in /opt, your `PYTHONPATH` should be
 
         export PYTHONPATH=/opt/pyscf:$PYTHONPATH
 
@@ -70,7 +75,6 @@ Installation
         ExternalProject_Add(libcint
           GIT_REPOSITORY https://github.com/sunqm/qcint.git
           ...
-
 
 
 Known problems
