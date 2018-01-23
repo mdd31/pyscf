@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
-# Author: Qiming Sun <osirpt.sun@gmail.com>
+# Authors: Qiming Sun <osirpt.sun@gmail.com>
+#          Mark J. Williamson <mw529@cam.ac.uk>
 #
 
 import numpy
@@ -13,7 +14,10 @@ from pyscf.dft import numint, gen_grid
 Gaussian cube file format
 '''
 
-def density(mol, outfile, dm, nx=80, ny=80, nz=80):
+# Conversion factor between AU and Angstrom
+AU_to_Ang = 0.529177249
+
+def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0):
     """Calculates electron density.
 
     Args:
@@ -26,13 +30,15 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80):
            same value.
         ny (int): Number of grid point divisions in y direction.
         nz (int): Number of grid point divisions in z direction.
+        pad (float): Amount of padding (in Angstrom) in all dimensions that will be applied in the automatic construction of the rectangular grid volume based on the geometry of the system.
 
 
     """
+    pad = pad / AU_to_Ang
 
     coord = mol.atom_coords()
-    box = numpy.max(coord,axis=0) - numpy.min(coord,axis=0) + 6
-    boxorig = numpy.min(coord,axis=0) - 3
+    box = (numpy.max(coord,axis=0) + pad) - (numpy.min(coord,axis=0) - pad)
+    boxorig = numpy.min(coord,axis=0) - pad
     xs = numpy.arange(nx) * (box[0]/nx)
     ys = numpy.arange(ny) * (box[1]/ny)
     zs = numpy.arange(nz) * (box[2]/nz)
@@ -73,7 +79,7 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80):
                         f.write(fmt % tuple(rho[ix,iy,iz:iz+remainder].tolist()))
                         break
 
-def mep(mol, outfile, dm, nx=80, ny=80, nz=80):
+def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0):
     """Calculates the molecular electrostatic potential (MEP).
 
     Args:
@@ -86,13 +92,14 @@ def mep(mol, outfile, dm, nx=80, ny=80, nz=80):
            same value.
         ny (int): Number of grid point divisions in y direction.
         nz (int): Number of grid point divisions in z direction.
+        pad (float): Amount of padding (in Angstrom) in all dimensions that will be applied in the automatic construction of the rectangular grid volume based on the geometry of the system.
 
 
     """
 
     coord = mol.atom_coords()
-    box = numpy.max(coord,axis=0) - numpy.min(coord,axis=0) + 6
-    boxorig = numpy.min(coord,axis=0) - 3
+    box = (numpy.max(coord,axis=0) + pad) - (numpy.min(coord,axis=0) - pad)
+    boxorig = numpy.min(coord,axis=0) - pad
     xs = numpy.arange(nx) * (box[0]/nx)
     ys = numpy.arange(ny) * (box[1]/ny)
     zs = numpy.arange(nz) * (box[2]/nz)
