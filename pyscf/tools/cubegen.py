@@ -96,6 +96,7 @@ def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0):
 
 
     """
+    pad = pad / AU_to_Ang
 
     coord = mol.atom_coords()
     box = (numpy.max(coord,axis=0) + pad) - (numpy.min(coord,axis=0) - pad)
