@@ -17,7 +17,7 @@ Gaussian cube file format
 # Conversion factor between AU and Angstrom
 AU_to_Ang = 0.529177249
 
-def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0):
+def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
     """Calculates electron density.
 
     Args:
@@ -79,7 +79,7 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0):
                         f.write(fmt % tuple(rho[ix,iy,iz:iz+remainder].tolist()))
                         break
 
-def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0):
+def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
     """Calculates the molecular electrostatic potential (MEP).
 
     Args:
