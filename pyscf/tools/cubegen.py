@@ -40,25 +40,25 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
     for ip0, ip1 in gen_grid.prange(0, ngrids, blksize):
         ao = numint.eval_ao(mol, grid.coords[ip0:ip1], out=ao)
         rho[ip0:ip1] = numint.eval_rho(mol, ao, dm)
-    rho = rho.reshape(nx,ny,nz)
+    rho = rho.reshape(grid.nx, grid.ny, grid.nz)
 
     with open(outfile, 'w') as f:
         f.write('Electron density in real space (e/Bohr^3)\n')
         f.write('PySCF Version: %s  Date: %s\n' % (pyscf.__version__, time.ctime()))
         f.write('%5d' % mol.natm)
         f.write('%12.6f%12.6f%12.6f\n' % tuple(grid.boxorig.tolist()))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (nx, grid.xs[1], 0, 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (ny, 0, grid.ys[1], 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (nz, 0, 0, grid.zs[1]))
+        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.nx, grid.xs[1], 0, 0))
+        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.ny, 0, grid.ys[1], 0))
+        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.nz, 0, 0, grid.zs[1]))
         for ia in range(mol.natm):
             chg = mol.atom_charge(ia)
             f.write('%5d%12.6f'% (chg, chg))
             f.write('%12.6f%12.6f%12.6f\n' % tuple(mol.atom_coords()[ia]))
 
-        for ix in range(nx):
-            for iy in range(ny):
-                for iz in range(0,nz,6):
-                    remainder  = (nz-iz)
+        for ix in range(grid.nx):
+            for iy in range(grid.ny):
+                for iz in range(0,grid.nz,6):
+                    remainder  = (grid.nz-iz)
                     if (remainder > 6 ):
                         fmt = '%13.5E' * 6 + '\n'
                         f.write(fmt % tuple(rho[ix,iy,iz:iz+6].tolist()))
@@ -104,25 +104,25 @@ def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
     MEP = Vnuc - Vele
 
     MEP = numpy.asarray(MEP)
-    MEP = MEP.reshape(nx,ny,nz)
+    MEP = MEP.reshape(grid.nx, grid.ny, grid.nz)
 
     with open(outfile, 'w') as f:
         f.write('Molecular electrostatic potential in real space\n')
         f.write('PySCF Version: %s  Date: %s\n' % (pyscf.__version__, time.ctime()))
         f.write('%5d' % mol.natm)
         f.write('%12.6f%12.6f%12.6f\n' % tuple(grid.boxorig.tolist()))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (nx, grid.xs[1], 0, 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (ny, 0, grid.ys[1], 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (nz, 0, 0, grid.zs[1]))
+        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.nx, grid.xs[1], 0, 0))
+        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.ny, 0, grid.ys[1], 0))
+        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.nz, 0, 0, grid.zs[1]))
         for ia in range(mol.natm):
             chg = mol.atom_charge(ia)
             f.write('%5d%12.6f'% (chg, chg))
             f.write('%12.6f%12.6f%12.6f\n' % tuple(mol.atom_coords()[ia]))
 
-        for ix in range(nx):
-            for iy in range(ny):
-                for iz in range(0,nz,6):
-                    remainder  = (nz-iz)
+        for ix in range(grid.nx):
+            for iy in range(grid.ny):
+                for iz in range(0,grid.nz,6):
+                    remainder  = (grid.nz-iz)
                     if (remainder > 6 ):
                         fmt = '%13.5E' * 6 + '\n'
                         f.write(fmt % tuple(MEP[ix,iy,iz:iz+6].tolist()))
