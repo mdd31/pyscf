@@ -53,7 +53,7 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
         for ia in range(mol.natm):
             chg = mol.atom_charge(ia)
             f.write('%5d%12.6f'% (chg, chg))
-            f.write('%12.6f%12.6f%12.6f\n' % tuple(grid.coords[ia]))
+            f.write('%12.6f%12.6f%12.6f\n' % tuple(mol.atom_coords()[ia]))
 
         for ix in range(nx):
             for iy in range(ny):
@@ -117,7 +117,7 @@ def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
         for ia in range(mol.natm):
             chg = mol.atom_charge(ia)
             f.write('%5d%12.6f'% (chg, chg))
-            f.write('%12.6f%12.6f%12.6f\n' % tuple(grid.coord[ia]))
+            f.write('%12.6f%12.6f%12.6f\n' % tuple(mol.atom_coords()[ia]))
 
         for ix in range(nx):
             for iy in range(ny):
