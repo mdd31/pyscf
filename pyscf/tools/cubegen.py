@@ -14,7 +14,7 @@ from pyscf.tools import grid_utils
 '''
 Gaussian cube file format
 '''
-def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
+def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0, gridspacing=None):
     """Calculates electron density.
 
     Args:
@@ -28,10 +28,14 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
         ny (int): Number of grid point divisions in y direction.
         nz (int): Number of grid point divisions in z direction.
         pad (float): Amount of padding (in Angstrom) in all dimensions that will be applied in the automatic construction of the rectangular grid volume based on the geometry of the system.
-
+        gridspacing (float):  Distance, in Angstroms, between points in the grid, in all dimensions. This will override the nx,ny,nz the parameters. Note the following values:
+               value/Angstroms  points/Bohr     Gaussian grid term
+               0.1763           3                       Coarse
+               0.0882           6                       Medium
+               0.0441           12                      Fine
 
     """
-    grid = grid_utils.grid(mol.atom_coords(), nx, ny, nz, pad)
+    grid = grid_utils.grid(mol.atom_coords(), nx, ny, nz, pad, gridspacing)
 
     ngrids = grid.coords.shape[0]
     blksize = min(8000, ngrids)
@@ -67,7 +71,7 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
                         f.write(fmt % tuple(rho[ix,iy,iz:iz+remainder].tolist()))
                         break
 
-def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
+def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0, gridspacing=None):
     """Calculates the molecular electrostatic potential (MEP).
 
     Args:
@@ -84,7 +88,7 @@ def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
 
 
     """
-    grid = grid_utils.grid(mol.atom_coords(), nx, ny, nz, pad)
+    grid = grid_utils.grid(mol.atom_coords(), nx, ny, nz, pad, gridspacing)
 
     # Nuclear potential at given points
     Vnuc = 0
