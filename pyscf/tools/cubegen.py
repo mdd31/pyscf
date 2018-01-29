@@ -36,9 +36,9 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
     coord = mol.atom_coords()
     box = (numpy.max(coord,axis=0) + pad) - (numpy.min(coord,axis=0) - pad)
     boxorig = numpy.min(coord,axis=0) - pad
-    xs = numpy.arange(nx) * (box[0]/nx)
-    ys = numpy.arange(ny) * (box[1]/ny)
-    zs = numpy.arange(nz) * (box[2]/nz)
+    xs = numpy.arange(nx) * (box[0]/(nx - 1))
+    ys = numpy.arange(ny) * (box[1]/(ny - 1))
+    zs = numpy.arange(nz) * (box[2]/(nz - 1))
     coords = lib.cartesian_prod([xs,ys,zs])
     coords = numpy.asarray(coords, order='C') - (-boxorig)
 
