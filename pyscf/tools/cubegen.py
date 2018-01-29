@@ -9,11 +9,11 @@ import time
 import pyscf
 from pyscf import lib
 from pyscf.dft import numint, gen_grid
+from pyscf.tools import grid_utils
 
 '''
 Gaussian cube file format
 '''
-
 def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
     """Calculates electron density.
 
@@ -31,23 +31,14 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
 
 
     """
-    pad = pad / lib.param.BOHR
+    grid = grid_utils.grid(mol.atom_coords(), nx, ny, nz, pad)
 
-    coord = mol.atom_coords()
-    box = (numpy.max(coord,axis=0) + pad) - (numpy.min(coord,axis=0) - pad)
-    boxorig = numpy.min(coord,axis=0) - pad
-    xs = numpy.arange(nx) * (box[0]/(nx - 1))
-    ys = numpy.arange(ny) * (box[1]/(ny - 1))
-    zs = numpy.arange(nz) * (box[2]/(nz - 1))
-    coords = lib.cartesian_prod([xs,ys,zs])
-    coords = numpy.asarray(coords, order='C') - (-boxorig)
-
-    ngrids = nx * ny * nz
+    ngrids = grid.coords.shape[0]
     blksize = min(8000, ngrids)
     rho = numpy.empty(ngrids)
     ao = None
     for ip0, ip1 in gen_grid.prange(0, ngrids, blksize):
-        ao = numint.eval_ao(mol, coords[ip0:ip1], out=ao)
+        ao = numint.eval_ao(mol, grid.coords[ip0:ip1], out=ao)
         rho[ip0:ip1] = numint.eval_rho(mol, ao, dm)
     rho = rho.reshape(nx,ny,nz)
 
@@ -55,14 +46,14 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
         f.write('Electron density in real space (e/Bohr^3)\n')
         f.write('PySCF Version: %s  Date: %s\n' % (pyscf.__version__, time.ctime()))
         f.write('%5d' % mol.natm)
-        f.write('%12.6f%12.6f%12.6f\n' % tuple(boxorig.tolist()))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (nx, xs[1], 0, 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (ny, 0, ys[1], 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (nz, 0, 0, zs[1]))
+        f.write('%12.6f%12.6f%12.6f\n' % tuple(grid.boxorig.tolist()))
+        f.write('%5d%12.6f%12.6f%12.6f\n' % (nx, grid.xs[1], 0, 0))
+        f.write('%5d%12.6f%12.6f%12.6f\n' % (ny, 0, grid.ys[1], 0))
+        f.write('%5d%12.6f%12.6f%12.6f\n' % (nz, 0, 0, grid.zs[1]))
         for ia in range(mol.natm):
             chg = mol.atom_charge(ia)
             f.write('%5d%12.6f'% (chg, chg))
-            f.write('%12.6f%12.6f%12.6f\n' % tuple(coord[ia]))
+            f.write('%12.6f%12.6f%12.6f\n' % tuple(grid.coords[ia]))
 
         for ix in range(nx):
             for iy in range(ny):
@@ -93,28 +84,19 @@ def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
 
 
     """
-    pad = pad / lib.param.BOHR
-
-    coord = mol.atom_coords()
-    box = (numpy.max(coord,axis=0) + pad) - (numpy.min(coord,axis=0) - pad)
-    boxorig = numpy.min(coord,axis=0) - pad
-    xs = numpy.arange(nx) * (box[0]/nx)
-    ys = numpy.arange(ny) * (box[1]/ny)
-    zs = numpy.arange(nz) * (box[2]/nz)
-    coords = lib.cartesian_prod([xs,ys,zs])
-    coords = numpy.asarray(coords, order='C') - (-boxorig)
+    grid = grid_utils.grid(mol.atom_coords(), nx, ny, nz, pad)
 
     # Nuclear potential at given points
     Vnuc = 0
     for i in range(mol.natm):
        r = mol.atom_coord(i)
        Z = mol.atom_charge(i)
-       rp = r - coords
+       rp = r - grid.coords
        Vnuc += Z / numpy.einsum('xi,xi->x', rp, rp)**.5
 
     # Potential of electron density
     Vele = []
-    for p in coords:
+    for p in grid.coords:
         mol.set_rinv_orig_(p)
         Vele.append(numpy.einsum('ij,ij', mol.intor('cint1e_rinv_sph'), dm))
 
@@ -128,14 +110,14 @@ def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0):
         f.write('Molecular electrostatic potential in real space\n')
         f.write('PySCF Version: %s  Date: %s\n' % (pyscf.__version__, time.ctime()))
         f.write('%5d' % mol.natm)
-        f.write('%12.6f%12.6f%12.6f\n' % tuple(boxorig.tolist()))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (nx, xs[1], 0, 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (ny, 0, ys[1], 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (nz, 0, 0, zs[1]))
+        f.write('%12.6f%12.6f%12.6f\n' % tuple(grid.boxorig.tolist()))
+        f.write('%5d%12.6f%12.6f%12.6f\n' % (nx, grid.xs[1], 0, 0))
+        f.write('%5d%12.6f%12.6f%12.6f\n' % (ny, 0, grid.ys[1], 0))
+        f.write('%5d%12.6f%12.6f%12.6f\n' % (nz, 0, 0, grid.zs[1]))
         for ia in range(mol.natm):
             chg = mol.atom_charge(ia)
             f.write('%5d%12.6f'% (chg, chg))
-            f.write('%12.6f%12.6f%12.6f\n' % tuple(coord[ia]))
+            f.write('%12.6f%12.6f%12.6f\n' % tuple(grid.coord[ia]))
 
         for ix in range(nx):
             for iy in range(ny):
