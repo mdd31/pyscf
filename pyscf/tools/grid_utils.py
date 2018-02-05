@@ -45,6 +45,8 @@ class grid(object):
            # +1 due to fencepost error.
            # Note, the effective gridspacing has changed due to use of ceil().
 
+        # .../(nx-1) to get symmetric mesh
+        # see also the discussion on https://github.com/sunqm/pyscf/issues/154
         self.xs = np.arange(self.nx) * (self.box[0]/(self.nx - 1))
         self.ys = np.arange(self.ny) * (self.box[1]/(self.ny - 1))
         self.zs = np.arange(self.nz) * (self.box[2]/(self.nz - 1))

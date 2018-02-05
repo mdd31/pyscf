@@ -4,6 +4,25 @@
 #          Mark J. Williamson <mw529@cam.ac.uk>
 #
 
+'''
+Gaussian cube file format.  Reference:
+http://paulbourke.net/dataformats/cube/
+http://gaussian.com/cubegen/
+
+The output cube file has the following format
+
+Comment line
+Comment line
+N_atom Ox Oy Oz         # number of atoms, followed by the coordinates of the origin
+N1 vx1 vy1 vz1          # number of grids along each axis, followed by the step size in x/y/z direction.
+N2 vx2 vy2 vz2          # ...
+N3 vx3 vy3 vz3          # ...
+Atom1 Z1 x y z          # Atomic number, charge, and coordinates of the atom
+...                     # ...
+AtomN ZN x y z          # ...
+Data on grids           # (N1*N2) lines of records, each line has N3 elements
+'''
+
 import numpy
 import time
 import pyscf
@@ -11,9 +30,6 @@ from pyscf import lib
 from pyscf.dft import numint, gen_grid
 from pyscf.tools import grid_utils
 
-'''
-Gaussian cube file format
-'''
 def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0, gridspacing=None):
     """Calculates electron density.
 
