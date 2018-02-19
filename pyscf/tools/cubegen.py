@@ -30,7 +30,7 @@ from pyscf import lib
 from pyscf.dft import numint, gen_grid
 from pyscf.tools import grid_utils
 
-def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0, gridspacing=None):
+def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
     """Calculates electron density.
 
     Args:
@@ -87,7 +87,7 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0, gridspacing=None):
                         f.write(fmt % tuple(rho[ix,iy,iz:iz+remainder].tolist()))
                         break
 
-def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=2.0, gridspacing=None):
+def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
     """Calculates the molecular electrostatic potential (MEP).
 
     Args:
