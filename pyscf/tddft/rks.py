@@ -13,6 +13,7 @@ from pyscf import lib
 from pyscf.dft import numint
 from pyscf import dft
 from pyscf.tddft import rhf
+from pyscf.scf import hf_symm
 from pyscf.ao2mo import _ao2mo
 from pyscf.scf.newton_ah import _gen_rhf_response
 
@@ -20,7 +21,6 @@ from pyscf.scf.newton_ah import _gen_rhf_response
 TDA = rhf.TDA
 
 RPA = TDDFT = rhf.TDHF
-
 
 class TDDFTNoHybrid(TDA):
     ''' Solve (A-B)(A+B)(X+Y) = (X+Y)w^2
@@ -113,6 +113,17 @@ class TDDFTNoHybrid(TDA):
         return self.e, self.xy
 
 
+class dRPA(TDDFTNoHybrid):
+    def __init__(self, mf):
+        if not hasattr(mf, 'xc'):
+            raise RuntimeError("direct RPA can only be applied with DFT; for HF+dRPA, use .xc='hf'")
+        from pyscf import scf
+        mf = scf.addons.convert_to_rhf(mf)
+        mf.xc = ''
+        TDDFTNoHybrid.__init__(self, mf)
+
+TDH = dRPA
+
 if __name__ == '__main__':
     from pyscf import gto
     from pyscf import scf
@@ -162,4 +173,11 @@ if __name__ == '__main__':
     print(td.kernel()[0] * 27.2114)
 # [  9.0139312    9.0139312   12.42444659]
 
+    mf = dft.RKS(mol)
+    mf.xc = 'lda,vwn'
+    mf.scf()
+    td = dRPA(mf)
+    td.nstates = 5
+    print(td.kernel()[0] * 27.2114)
+# [ 10.00343861  10.00343861  15.62586305  30.69238874  30.69238874]
 
