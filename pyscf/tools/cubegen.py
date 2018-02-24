@@ -64,30 +64,9 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
         rho[ip0:ip1] = numint.eval_rho(mol, ao, dm)
     rho = rho.reshape(grid.nx, grid.ny, grid.nz)
 
-    with open(outfile, 'w') as f:
-        f.write('Electron density in real space (e/Bohr^3)\n')
-        f.write('PySCF Version: %s  Date: %s\n' % (pyscf.__version__, time.ctime()))
-        f.write('%5d' % mol.natm)
-        f.write('%12.6f%12.6f%12.6f\n' % tuple(grid.boxorig.tolist()))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.nx, grid.xs[1], 0, 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.ny, 0, grid.ys[1], 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.nz, 0, 0, grid.zs[1]))
-        for ia in range(mol.natm):
-            chg = mol.atom_charge(ia)
-            f.write('%5d%12.6f'% (chg, chg))
-            f.write('%12.6f%12.6f%12.6f\n' % tuple(mol.atom_coords()[ia]))
-
-        for ix in range(grid.nx):
-            for iy in range(grid.ny):
-                for iz in range(0,grid.nz,6):
-                    remainder  = (grid.nz-iz)
-                    if (remainder > 6 ):
-                        fmt = '%13.5E' * 6 + '\n'
-                        f.write(fmt % tuple(rho[ix,iy,iz:iz+6].tolist()))
-                    else:
-                        fmt = '%13.5E' * remainder + '\n'
-                        f.write(fmt % tuple(rho[ix,iy,iz:iz+remainder].tolist()))
-                        break
+    grid_utils.write_formatted_cube_file(outfile,
+                                         'Electron density in real space (e/Bohr^3)',
+                                         grid, rho)
 
 def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
     """Calculates the molecular electrostatic potential (MEP).
@@ -128,30 +107,9 @@ def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
     MEP = numpy.asarray(MEP)
     MEP = MEP.reshape(grid.nx, grid.ny, grid.nz)
 
-    with open(outfile, 'w') as f:
-        f.write('Molecular electrostatic potential in real space\n')
-        f.write('PySCF Version: %s  Date: %s\n' % (pyscf.__version__, time.ctime()))
-        f.write('%5d' % mol.natm)
-        f.write('%12.6f%12.6f%12.6f\n' % tuple(grid.boxorig.tolist()))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.nx, grid.xs[1], 0, 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.ny, 0, grid.ys[1], 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.nz, 0, 0, grid.zs[1]))
-        for ia in range(mol.natm):
-            chg = mol.atom_charge(ia)
-            f.write('%5d%12.6f'% (chg, chg))
-            f.write('%12.6f%12.6f%12.6f\n' % tuple(mol.atom_coords()[ia]))
-
-        for ix in range(grid.nx):
-            for iy in range(grid.ny):
-                for iz in range(0,grid.nz,6):
-                    remainder  = (grid.nz-iz)
-                    if (remainder > 6 ):
-                        fmt = '%13.5E' * 6 + '\n'
-                        f.write(fmt % tuple(MEP[ix,iy,iz:iz+6].tolist()))
-                    else:
-                        fmt = '%13.5E' * remainder + '\n'
-                        f.write(fmt % tuple(MEP[ix,iy,iz:iz+remainder].tolist()))
-                        break
+    grid_utils.write_formatted_cube_file(outfile,
+                                         'Molecular electrostatic potential in real space',
+                                         grid, MEP)
 
 def isomep(mol, outfile, dm, electronic_iso=0.002, iso_tol=0.00003, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
     """Calculates MEP on a specific electron density surface.

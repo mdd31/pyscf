@@ -104,7 +104,7 @@ class Grid(object):
         """
         grid_line_fortran_format = '{:5d}{:12.6f}{:12.6f}{:12.6f}'
         grid_info_lines = []
-        grid_info_lines.append(grid_line_fortran_format.format(self.mol.natom,
+        grid_info_lines.append(grid_line_fortran_format.format(self.mol.natm,
                                                                *self.boxorig.tolist()))
         grid_info_lines.append(grid_line_fortran_format.format(self.nx, self.xs[1], 0, 0))
         grid_info_lines.append(grid_line_fortran_format.format(self.ny, 0, self.ys[1], 0))
@@ -121,7 +121,7 @@ class Grid(object):
         atom_lines = []
         atom_charges = self.mol.atom_charges()
         atom_coords = self.mol.atom_coords()
-        for atom_index in self.mol.natom:
+        for atom_index in range(self.mol.natm):
             atom_lines.append(atom_fortran_format.format(atom_charges[atom_index],
                                                          atom_charges[atom_index],
                                                          atom_coords[atom_index][0],
@@ -180,9 +180,13 @@ def write_formatted_cube_file(filename, cube_information, grid, property_values_
     with open(filename, 'w') as outfile:
         header_lines = write_cube_header_lines(cube_information)
         outfile.write("\n".join(header_lines))
+        outfile.write("\n")
         grid_info_lines = grid.create_grid_info_lines()
         outfile.write("\n".join(grid_info_lines))
+        outfile.write("\n")
         atom_info_lines = grid.create_atom_cube_lines()
         outfile.write("\n".join(atom_info_lines))
+        outfile.write("\n")
         cube_data_lines = write_formatted_cube_data_lines(grid, property_values_array)
         outfile.write("\n".join(cube_data_lines))
+        outfile.write("\n")
