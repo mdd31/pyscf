@@ -4,9 +4,34 @@
 #          Mark D. Driver <mdd31@cam.ac.uk>
 #
 
+'''
+Gaussian cube file format.  Reference:
+http://paulbourke.net/dataformats/cube/
+http://gaussian.com/cubegen/
+
+The formatted cube file has the following format
+
+Comment line
+Comment line
+N_atom Ox Oy Oz         # number of atoms, followed by the coordinates of the origin
+N1 vx1 vy1 vz1          # number of grids along each axis, followed by the step size in x/y/z direction.
+N2 vx2 vy2 vz2          # ...
+N3 vx3 vy3 vz3          # ...
+Atom1 Z1 x y z          # Atomic number, charge, and coordinates of the atom
+...                     # ...
+AtomN ZN x y z          # ...
+Data on grids           # (N1*N2) lines of records, each line has N3 elements
+
+An unformatted cube file differs in format. In this the Data has only one
+entry per line:
+    x y z Value
+The unformatted format is required for isomep surface output.
+
+'''
 
 import numpy as np
-
+import time
+import pyscf
 from pyscf import lib
 
 LOGGER = lib.logger.new_logger(verbose=0)
@@ -73,6 +98,9 @@ class Grid(object):
     def create_grid_info_lines(self):
         """This generates the lines containing information about the grid
         directions and grid origin, and number of atoms.
+        
+        Returns:
+            Grid information lines as list of formatted Strings.
         """
         grid_line_fortran_format = '{:5d}{:12.6f}{:12.6f}{:12.6f}'
         grid_info_lines = []
@@ -85,6 +113,9 @@ class Grid(object):
 
     def create_atom_cube_lines(self):
         """This generates the atom lines for any cube file.
+        
+        Returns:
+            Atom lines for a cube file as list of formatted Strings
         """
         atom_fortran_format = '{:5d}{:12.6f}{:12.6f}{:12.6f}{:12.6f}'
         atom_lines = []
@@ -97,3 +128,61 @@ class Grid(object):
                                                          atom_coords[atom_index][1],
                                                          atom_coords[atom_index][2]))
         return atom_lines
+
+
+def write_cube_header_lines(cube_information):
+    """This writes the header comment lines for the cube file.
+    
+    Returns:
+        Header comment lines: First line contains information of contents. 
+                              Second contains Pyscf information.
+    """
+    header_lines = []
+    header_lines.append(cube_information)
+    header_lines.append("PySCF Version: {:s}  Date: {:s}".format(pyscf.__version__, time.ctime()))
+    return header_lines
+
+
+def write_formatted_cube_data_lines(grid, property_values_array):
+    """This generates the Data lines for a formatted cube file.
+    
+    Args:
+        grid: grid object
+        property_values_array: 
+    
+    Returns:
+        Data lines as list of formatted strings
+    """
+    data_lines = []
+    value_fortran_format = "{:13.5E}"
+    for ix in range(grid.nx):
+        for iy in range(grid.ny):
+            for iz in range(0,grid.nz,6):
+                remainder  = (grid.nz-iz)
+                if (remainder > 6 ):
+                    line_format = value_fortran_format * 6
+                    data_lines.append(line_format.format(*property_values_array[ix,iy,iz:iz+6].tolist()))
+                else:
+                    line_format = value_fortran_format * remainder
+                    data_lines.append(line_format.format(*property_values_array[ix,iy,iz:iz+remainder].tolist()))
+                    break
+    return data_lines
+
+def write_formatted_cube_file(filename, cube_information, grid, property_values_array):
+    """This writes the information to a formatted cube file.
+    
+    Args:
+        filename: file to write to.
+        cube_information: description of data in cube file.
+        grid:
+        property_values_array:
+    """
+    with open(filename, 'w') as outfile:
+        header_lines = write_cube_header_lines(cube_information)
+        outfile.write("\n".join(header_lines))
+        grid_info_lines = grid.create_grid_info_lines()
+        outfile.write("\n".join(grid_info_lines))
+        atom_info_lines = grid.create_atom_cube_lines()
+        outfile.write("\n".join(atom_info_lines))
+        cube_data_lines = write_formatted_cube_data_lines(grid, property_values_array)
+        outfile.write("\n".join(cube_data_lines))
