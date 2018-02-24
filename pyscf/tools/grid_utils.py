@@ -1,9 +1,18 @@
+#!/usr/bin/env python
+#
+# Authors: Mark J. Williamson <mw529@cam.ac.uk>
+#          Mark D. Driver <mdd31@cam.ac.uk>
+#
+
+
 import numpy as np
 
 from pyscf import lib
 
+LOGGER = lib.logger.new_logger(verbose=0)
 
-class grid(object):
+
+class Grid(object):
     """Calculate a set of grid points around a molecule.
 
     Args:
@@ -20,7 +29,7 @@ class grid(object):
                0.1763          	3               	Coarse
                0.0882          	6               	Medium
                0.0441          	12              	Fine
- 
+
     """
     def __init__(self, atom_coords, nx, ny, nz, pad, gridspacing):
         self.pad = pad / lib.param.BOHR
@@ -30,31 +39,33 @@ class grid(object):
 
         self.atom_coords = atom_coords
 
-	self.boxmax = np.max(self.atom_coords,axis=0) + self.pad
-	self.boxmin = np.min(self.atom_coords,axis=0) - self.pad
+        self.boxmax = np.max(self.atom_coords, axis=0) + self.pad
+        self.boxmin = np.min(self.atom_coords, axis=0) - self.pad
 
-	self.box = self.boxmax - self.boxmin
-	self.boxorig = self.boxmin
+        self.box = self.boxmax - self.boxmin
+        self.boxorig = self.boxmin
 
         if gridspacing:
-           self.gridspacing = gridspacing / lib.param.BOHR
+            self.gridspacing = gridspacing / lib.param.BOHR
 
-           self.nx = (self.box[0] // self.gridspacing ).astype('int') + 1
-           self.ny = (self.box[1] // self.gridspacing ).astype('int') + 1
-           self.nz = (self.box[2] // self.gridspacing ).astype('int') + 1
-           # +1 due to fencepost error.
+            self.nx = (self.box[0] // self.gridspacing).astype('int') + 1
+            self.ny = (self.box[1] // self.gridspacing).astype('int') + 1
+            self.nz = (self.box[2] // self.gridspacing).astype('int') + 1
+            # +1 due to fencepost error.
 
-           self.xs = np.arange(self.nx) * self.gridspacing
-           self.ys = np.arange(self.ny) * self.gridspacing
-           self.zs = np.arange(self.nz) * self.gridspacing
+            self.xs = np.arange(self.nx) * self.gridspacing
+            self.ys = np.arange(self.ny) * self.gridspacing
+            self.zs = np.arange(self.nz) * self.gridspacing
 
         else:
 
-           # .../(nx-1) to get symmetric mesh
-           # see also the discussion on https://github.com/sunqm/pyscf/issues/154
-           self.xs = np.arange(self.nx) * (self.box[0]/(self.nx - 1))
-           self.ys = np.arange(self.ny) * (self.box[1]/(self.ny - 1))
-           self.zs = np.arange(self.nz) * (self.box[2]/(self.nz - 1))
+            # .../(nx-1) to get symmetric mesh
+            # see also the discussion on https://github.com/sunqm/pyscf/issues/154
+            self.xs = np.arange(self.nx) * (self.box[0]/(self.nx - 1))
+            self.ys = np.arange(self.ny) * (self.box[1]/(self.ny - 1))
+            self.zs = np.arange(self.nz) * (self.box[2]/(self.nz - 1))
 
         self.coords = lib.cartesian_prod([self.xs, self.ys, self.zs])
         self.coords = np.asarray(self.coords, order='C') - (-self.boxorig)
+
+
