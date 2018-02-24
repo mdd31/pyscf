@@ -53,7 +53,7 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
                0.0441           12                      Fine
 
     """
-    grid = grid_utils.Grid(mol.atom_coords(), nx, ny, nz, pad, gridspacing)
+    grid = grid_utils.Grid(mol, nx, ny, nz, pad, gridspacing)
 
     ngrids = grid.coords.shape[0]
     blksize = min(8000, ngrids)
@@ -106,7 +106,7 @@ def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
 
 
     """
-    grid = grid_utils.Grid(mol.atom_coords(), nx, ny, nz, pad, gridspacing)
+    grid = grid_utils.Grid(mol, nx, ny, nz, pad, gridspacing)
 
     # Nuclear potential at given points
     Vnuc = 0
@@ -174,7 +174,7 @@ def isomep(mol, outfile, dm, electronic_iso=0.002, iso_tol=0.00003, nx=80, ny=80
                0.0441           12                      Fine
 
     """
-    grid = grid_utils.Grid(mol.atom_coords(), nx, ny, nz, pad, gridspacing)
+    grid = grid_utils.Grid(mol, nx, ny, nz, pad, gridspacing)
 
     ngrids = grid.coords.shape[0]
     blksize = min(8000, ngrids)

@@ -31,16 +31,18 @@ class Grid(object):
                0.0441          	12              	Fine
 
     """
-    def __init__(self, atom_coords, nx, ny, nz, pad, gridspacing):
+    def __init__(self, mol, nx, ny, nz, pad, gridspacing):
         self.pad = pad / lib.param.BOHR
         self.nx = nx
         self.ny = ny
         self.nz = nz
 
-        self.atom_coords = atom_coords
+        self.mol = mol
 
-        self.boxmax = np.max(self.atom_coords, axis=0) + self.pad
-        self.boxmin = np.min(self.atom_coords, axis=0) - self.pad
+        atom_coords = self.mol.atom_coords()
+
+        self.boxmax = np.max(atom_coords, axis=0) + self.pad
+        self.boxmin = np.min(atom_coords, axis=0) - self.pad
 
         self.box = self.boxmax - self.boxmin
         self.boxorig = self.boxmin
@@ -68,4 +70,30 @@ class Grid(object):
         self.coords = lib.cartesian_prod([self.xs, self.ys, self.zs])
         self.coords = np.asarray(self.coords, order='C') - (-self.boxorig)
 
+    def create_grid_info_lines(self):
+        """This generates the lines containing information about the grid
+        directions and grid origin, and number of atoms.
+        """
+        grid_line_fortran_format = '{:5d}{:12.6f}{:12.6f}{:12.6f}'
+        grid_info_lines = []
+        grid_info_lines.append(grid_line_fortran_format.format(self.mol.natom,
+                                                               *self.boxorig.tolist()))
+        grid_info_lines.append(grid_line_fortran_format.format(self.nx, self.xs[1], 0, 0))
+        grid_info_lines.append(grid_line_fortran_format.format(self.ny, 0, self.ys[1], 0))
+        grid_info_lines.append(grid_line_fortran_format.format(self.nz, 0, 0, self.zs[1]))
+        return grid_info_lines
 
+    def create_atom_cube_lines(self):
+        """This generates the atom lines for any cube file.
+        """
+        atom_fortran_format = '{:5d}{:12.6f}{:12.6f}{:12.6f}{:12.6f}'
+        atom_lines = []
+        atom_charges = self.mol.atom_charges()
+        atom_coords = self.mol.atom_coords()
+        for atom_index in self.mol.natom:
+            atom_lines.append(atom_fortran_format.format(atom_charges[atom_index],
+                                                         atom_charges[atom_index],
+                                                         atom_coords[atom_index][0],
+                                                         atom_coords[atom_index][1],
+                                                         atom_coords[atom_index][2]))
+        return atom_lines
