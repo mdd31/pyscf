@@ -203,37 +203,20 @@ def isomep(mol, outfile, dm, electronic_iso=0.002, iso_tol=0.00003, nx=80, ny=80
     LOGGER.info("inner voxel count: %d", inner_voxel_count)
     voxel_volume = gridspacing * gridspacing * gridspacing
     LOGGER.info("Each voxel volume /  A^3: %f", voxel_volume)
-    LOGGER.info("Total inner volume / A^3: %f", inner_voxel_count * voxel_volume)
+    inner_volume = inner_voxel_count * voxel_volume
+    LOGGER.info("Total inner volume / A^3: %f", inner_volume)
     
     
     mep_values = mep_for_coords(mol, dm, surface_voxel_coords)
     LOGGER.debug("MEP values shape: %s", mep_values.shape)
+    mep_values = mep_values.reshape((mep_values.shape[0], 1))
+    LOGGER.debug("MEP values shape: %s", mep_values.shape)
+    #Add the potentials to the coordinates: each row describes one point.
+    coords_with_mep_values = numpy.append(surface_voxel_coords, mep_values, axis=1)
     
+    cube_information = "Molecular electrostatic potential in real space on {:.5f} isodensity surface. Volume: {:.6f}".format(electronic_iso, inner_volume)
     
-    with open(outfile, 'w') as f:
-        f.write('Electron density in real space (e/Bohr^3)\n')
-        f.write('PySCF Version: %s  Date: %s\n' % (pyscf.__version__, time.ctime()))
-        f.write('%5d' % mol.natm)
-        f.write('%12.6f%12.6f%12.6f\n' % tuple(grid.boxorig.tolist()))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.nx, grid.xs[1], 0, 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.ny, 0, grid.ys[1], 0))
-        f.write('%5d%12.6f%12.6f%12.6f\n' % (grid.nz, 0, 0, grid.zs[1]))
-        for ia in range(mol.natm):
-            chg = mol.atom_charge(ia)
-            f.write('%5d%12.6f'% (chg, chg))
-            f.write('%12.6f%12.6f%12.6f\n' % tuple(mol.atom_coords()[ia]))
-
-        for ix in range(grid.nx):
-            for iy in range(grid.ny):
-                for iz in range(0,grid.nz,6):
-                    remainder  = (grid.nz-iz)
-                    if (remainder > 6 ):
-                        fmt = '%13.5E' * 6 + '\n'
-                        f.write(fmt % tuple(rho[ix,iy,iz:iz+6].tolist()))
-                    else:
-                        fmt = '%13.5E' * remainder + '\n'
-                        f.write(fmt % tuple(rho[ix,iy,iz:iz+remainder].tolist()))
-                        break
+    grid_utils.write_unformatted_cube_file(outfile, cube_information, grid, coords_with_mep_values)
 
 
 

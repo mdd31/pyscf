@@ -168,6 +168,24 @@ def write_formatted_cube_data_lines(grid, property_values_array):
                     break
     return data_lines
 
+def write_unformatted_cube_data_lines(property_value_array_with_coords):
+    """This writes the property lines for the unformatted cube file.
+    Data format is:
+        x y z value
+    
+    Args:
+        property_value_array_with_coords: (N,4) array. N data values. rows are (x, y, z, value).
+        
+    Returns:
+        Data lines as list of formatted strings.
+    """
+    data_lines = []
+    line_fortran_format = "{:13.6f}{:13.6f}{:13.6f}{:13.6f}"
+    for i in range(len(property_value_array_with_coords)):
+        data_lines.append(line_fortran_format.format(*property_value_array_with_coords[i]))
+    return data_lines
+    
+
 def write_formatted_cube_file(filename, cube_information, grid, property_values_array):
     """This writes the information to a formatted cube file.
     
@@ -188,5 +206,29 @@ def write_formatted_cube_file(filename, cube_information, grid, property_values_
         outfile.write("\n".join(atom_info_lines))
         outfile.write("\n")
         cube_data_lines = write_formatted_cube_data_lines(grid, property_values_array)
+        outfile.write("\n".join(cube_data_lines))
+        outfile.write("\n")
+
+def write_unformatted_cube_file(filename, cube_information, grid, property_value_array_with_coords):
+    """This writes the information to an unformatted cube file.
+    
+    Args:
+        filename:
+        cube_iunformation:
+        grid:
+        property_value_array_with_coords:
+    
+    """
+    with open(filename, 'w') as outfile:
+        header_lines = write_cube_header_lines(cube_information)
+        outfile.write("\n".join(header_lines))
+        outfile.write("\n")
+        grid_info_lines = grid.create_grid_info_lines()
+        outfile.write("\n".join(grid_info_lines))
+        outfile.write("\n")
+        atom_info_lines = grid.create_atom_cube_lines()
+        outfile.write("\n".join(atom_info_lines))
+        outfile.write("\n")
+        cube_data_lines = write_unformatted_cube_data_lines(property_value_array_with_coords)
         outfile.write("\n".join(cube_data_lines))
         outfile.write("\n")
