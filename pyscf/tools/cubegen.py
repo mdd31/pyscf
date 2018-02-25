@@ -87,30 +87,35 @@ def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
     """
     grid = grid_utils.Grid(mol, nx, ny, nz, pad, gridspacing)
 
+    mep_values = mep_for_coords(mol, dm, grid.coords)
+    mep_values = mep_values.reshape(grid.nx, grid.ny, grid.nz)
+
+    grid_utils.write_formatted_cube_file(outfile,
+                                         'Molecular electrostatic potential in real space',
+                                         grid, mep_values)
+
+def mep_for_coords(mol, dm, coords):
+    """This calculates the MEP value at the given coords.
+    """
     # Nuclear potential at given points
     Vnuc = 0
     for i in range(mol.natm):
        r = mol.atom_coord(i)
        Z = mol.atom_charge(i)
-       rp = r - grid.coords
+       rp = r - coords
        Vnuc += Z / numpy.einsum('xi,xi->x', rp, rp)**.5
 
     # Potential of electron density
     Vele = []
-    for p in grid.coords:
+    for p in coords:
         mol.set_rinv_orig_(p)
         Vele.append(numpy.einsum('ij,ij', mol.intor('cint1e_rinv_sph'), dm))
 
     # MEP at each point
-    MEP = Vnuc - Vele
+    mep_values = Vnuc - Vele
 
-    MEP = numpy.asarray(MEP)
-    MEP = MEP.reshape(grid.nx, grid.ny, grid.nz)
-
-    grid_utils.write_formatted_cube_file(outfile,
-                                         'Molecular electrostatic potential in real space',
-                                         grid, MEP)
-
+    mep_values = numpy.asarray(mep_values)
+    return mep_values
 
 def isomep(mol, outfile, dm, electronic_iso=0.002, iso_tol=0.00003, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
     """Calculates MEP on a specific electron density surface.
@@ -184,7 +189,6 @@ def isomep(mol, outfile, dm, electronic_iso=0.002, iso_tol=0.00003, nx=80, ny=80
        # Volume calculation
        if ( voxel  > electronic_iso ):
           rho[index] = voxel
-
        else:
           rho[index] = 0.0
     LOGGER.debug("rho shape: %s", rho.shape)
@@ -201,24 +205,10 @@ def isomep(mol, outfile, dm, electronic_iso=0.002, iso_tol=0.00003, nx=80, ny=80
     LOGGER.info("Each voxel volume /  A^3: %f", voxel_volume)
     LOGGER.info("Total inner volume / A^3: %f", inner_voxel_count * voxel_volume)
     
-    # Nuclear potential at given points
-    Vnuc = 0
-    for i in range(mol.natm):
-       r = mol.atom_coord(i)
-       Z = mol.atom_charge(i)
-       rp = r - grid.coords
-       Vnuc += Z / numpy.einsum('xi,xi->x', rp, rp)**.5
-
-    # Potential of electron density
-    Vele = []
-    for p in grid.coords:
-        mol.set_rinv_orig_(p)
-        Vele.append(numpy.einsum('ij,ij', mol.intor('cint1e_rinv_sph'), dm))
-
-    # MEP at each point
-    MEP = Vnuc - Vele
-
-    MEP = numpy.asarray(MEP)
+    
+    mep_values = mep_for_coords(mol, dm, surface_voxel_coords)
+    LOGGER.debug("MEP values shape: %s", mep_values.shape)
+    
     
     with open(outfile, 'w') as f:
         f.write('Electron density in real space (e/Bohr^3)\n')
