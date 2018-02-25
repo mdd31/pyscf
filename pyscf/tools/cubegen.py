@@ -30,7 +30,7 @@ from pyscf import lib
 from pyscf.dft import numint, gen_grid
 from pyscf.tools import grid_utils
 
-LOGGER = lib.logger.Logger(verbose=5)
+LOGGER = lib.logger.Logger(verbose=7)
 
 def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
     """Calculates electron density.
@@ -54,7 +54,7 @@ def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
 
     """
     grid = grid_utils.Grid(mol, nx, ny, nz, pad, gridspacing)
-
+    
     ngrids = grid.coords.shape[0]
     blksize = min(8000, ngrids)
     rho = numpy.empty(ngrids)
@@ -111,6 +111,7 @@ def mep(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
                                          'Molecular electrostatic potential in real space',
                                          grid, MEP)
 
+
 def isomep(mol, outfile, dm, electronic_iso=0.002, iso_tol=0.00003, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
     """Calculates MEP on a specific electron density surface.
 
@@ -133,7 +134,8 @@ def isomep(mol, outfile, dm, electronic_iso=0.002, iso_tol=0.00003, nx=80, ny=80
 
     """
     grid = grid_utils.Grid(mol, nx, ny, nz, pad, gridspacing)
-
+    LOGGER.debug("grid coords shape: %s", grid.coords.shape)
+    LOGGER.debug("grid coords first element shape: %s", grid.coords[0].shape)
     ngrids = grid.coords.shape[0]
     blksize = min(8000, ngrids)
     rho = numpy.empty(ngrids)
@@ -142,36 +144,53 @@ def isomep(mol, outfile, dm, electronic_iso=0.002, iso_tol=0.00003, nx=80, ny=80
         ao = numint.eval_ao(mol, grid.coords[ip0:ip1], out=ao)
         rho[ip0:ip1] = numint.eval_rho(mol, ao, dm)
 
-    # Number of voxels at the defined electronic_iso surface
-    # Used for area
-    surface_voxel_count = 0
-
     # Number of voxels *within* the defined electronic_iso surface
     # Used for volume
     inner_voxel_count = 0
 
-    print "Total number of density voxels: " + str(len(rho))
+    LOGGER.note("Total number of density voxels: %d", len(rho))
 
-    # Just count
-    for index, voxel in enumerate(rho):
-       # Voxels at surface
-       #(num > (ISO - TOL) ) && (num < (ISO + TOL) )
-       if ( (voxel > (electronic_iso - iso_tol)) and (voxel < (electronic_iso + iso_tol))  ):
-          surface_voxel_count += 1
-          #print index,voxel
-
+    is_surface_voxel = numpy.logical_and(rho > (electronic_iso - iso_tol),
+                                         rho < (electronic_iso + iso_tol))
+    LOGGER.debug("Surface voxel count from logical_and: %d", numpy.count_nonzero(is_surface_voxel))
+    
+    surface_voxel_grid_indices = numpy.nonzero(is_surface_voxel)[0]
+    LOGGER.debug2("Surface voxel indices: %s", surface_voxel_grid_indices)
+    LOGGER.debug2("Surface voxel indices shape: %s", surface_voxel_grid_indices.shape)
+    
+    # Number of voxels at the defined electronic_iso surface
+    # Used for area
+    # Voxels at surface
+    #(num > (ISO - TOL) ) && (num < (ISO + TOL) )
+    surface_voxel_count = surface_voxel_grid_indices.shape[0]
+    surface_voxel_coords = grid.coords[surface_voxel_grid_indices[0]]
+    for i in range(1,surface_voxel_grid_indices.shape[0]):
+        surface_voxel_coord = grid.coords[surface_voxel_grid_indices[i]]
+        LOGGER.debug4("surface voxel coord shape: %s", surface_voxel_coord.shape)
+        surface_voxel_coords = numpy.append(surface_voxel_coords, surface_voxel_coord, axis=0)
+    LOGGER.debug("surface_voxel_coords shape: %s", surface_voxel_coords.shape)
+    surface_voxel_coords = surface_voxel_coords.reshape((surface_voxel_grid_indices.shape[0], 3))
+    LOGGER.debug("surface_voxel_coords shape: %s", surface_voxel_coords.shape)
+    LOGGER.debug3("First coord from grid: %s", grid.coords[surface_voxel_grid_indices[0]])
+    LOGGER.debug3("First coord from surf voxel array: %s",surface_voxel_coords[0])
+    
+    is_in_surface = numpy.greater(rho, electronic_iso)
+    LOGGER.debug("Voxel count from numpy.greater: %d", numpy.count_nonzero(is_in_surface))
+    # Number of voxels *within* the defined electronic_iso surface
+    # Used for volume
+    inner_voxel_count = numpy.count_nonzero(is_in_surface)
     # This time, actually change
     for index, voxel in enumerate(rho):
        # Volume calculation
        if ( voxel  > electronic_iso ):
-          inner_voxel_count += 1
           rho[index] = voxel
 
        else:
           rho[index] = 0.0
-
+    LOGGER.debug("rho shape: %s", rho.shape)
     rho = rho.reshape(grid.nx, grid.ny, grid.nz)
 
+    LOGGER.debug("rho shape: %s", rho.shape)
     LOGGER.note("surface voxels_found: %d", surface_voxel_count)
     voxel_area = gridspacing * gridspacing
     LOGGER.info("Each voxel area /  A^2: %f", voxel_area)
@@ -181,6 +200,25 @@ def isomep(mol, outfile, dm, electronic_iso=0.002, iso_tol=0.00003, nx=80, ny=80
     voxel_volume = gridspacing * gridspacing * gridspacing
     LOGGER.info("Each voxel volume /  A^3: %f", voxel_volume)
     LOGGER.info("Total inner volume / A^3: %f", inner_voxel_count * voxel_volume)
+    
+    # Nuclear potential at given points
+    Vnuc = 0
+    for i in range(mol.natm):
+       r = mol.atom_coord(i)
+       Z = mol.atom_charge(i)
+       rp = r - grid.coords
+       Vnuc += Z / numpy.einsum('xi,xi->x', rp, rp)**.5
+
+    # Potential of electron density
+    Vele = []
+    for p in grid.coords:
+        mol.set_rinv_orig_(p)
+        Vele.append(numpy.einsum('ij,ij', mol.intor('cint1e_rinv_sph'), dm))
+
+    # MEP at each point
+    MEP = Vnuc - Vele
+
+    MEP = numpy.asarray(MEP)
     
     with open(outfile, 'w') as f:
         f.write('Electron density in real space (e/Bohr^3)\n')
