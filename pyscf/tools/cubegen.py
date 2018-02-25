@@ -30,7 +30,7 @@ from pyscf import lib
 from pyscf.dft import numint, gen_grid
 from pyscf.tools import grid_utils
 
-LOGGER = lib.logger.new_logger(verbose=0)
+LOGGER = lib.logger.Logger(verbose=5)
 
 def density(mol, outfile, dm, nx=80, ny=80, nz=80, pad=4.0, gridspacing=None):
     """Calculates electron density.
@@ -172,16 +172,16 @@ def isomep(mol, outfile, dm, electronic_iso=0.002, iso_tol=0.00003, nx=80, ny=80
 
     rho = rho.reshape(grid.nx, grid.ny, grid.nz)
 
-    print "surface voxels_found: " + str(surface_voxel_count)
+    LOGGER.note("surface voxels_found: %d", surface_voxel_count)
     voxel_area = gridspacing * gridspacing
-    print "Each voxel area /  A^2: " + str(voxel_area)
-    print "inner surface area / A^2: " + str(surface_voxel_count * voxel_area)
-
-    print "inner voxel count: " + str(inner_voxel_count)
+    LOGGER.info("Each voxel area /  A^2: %f", voxel_area)
+    LOGGER.info("inner surface area / A^2: %f", surface_voxel_count * voxel_area)
+    
+    LOGGER.info("inner voxel count: %d", inner_voxel_count)
     voxel_volume = gridspacing * gridspacing * gridspacing
-    print "Each voxel volume /  A^3: " + str(voxel_volume)
-    print "Total inner volume / A^3: " + str(inner_voxel_count * voxel_volume)
-
+    LOGGER.info("Each voxel volume /  A^3: %f", voxel_volume)
+    LOGGER.info("Total inner volume / A^3: %f", inner_voxel_count * voxel_volume)
+    
     with open(outfile, 'w') as f:
         f.write('Electron density in real space (e/Bohr^3)\n')
         f.write('PySCF Version: %s  Date: %s\n' % (pyscf.__version__, time.ctime()))
@@ -206,10 +206,6 @@ def isomep(mol, outfile, dm, electronic_iso=0.002, iso_tol=0.00003, nx=80, ny=80
                         fmt = '%13.5E' * remainder + '\n'
                         f.write(fmt % tuple(rho[ix,iy,iz:iz+remainder].tolist()))
                         break
-
-
-
-
 
 
 
