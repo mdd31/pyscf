@@ -29,8 +29,8 @@ The unformatted format is required for isomep surface output.
 
 '''
 
-import numpy as np
 import time
+import numpy as np
 import pyscf
 from pyscf import lib
 
@@ -98,7 +98,7 @@ class Grid(object):
     def create_grid_info_lines(self):
         """This generates the lines containing information about the grid
         directions and grid origin, and number of atoms.
-        
+
         Returns:
             Grid information lines as list of formatted Strings.
         """
@@ -113,7 +113,7 @@ class Grid(object):
 
     def create_atom_cube_lines(self):
         """This generates the atom lines for any cube file.
-        
+
         Returns:
             Atom lines for a cube file as list of formatted Strings
         """
@@ -132,9 +132,9 @@ class Grid(object):
 
 def write_cube_header_lines(cube_information):
     """This writes the header comment lines for the cube file.
-    
+
     Returns:
-        Header comment lines: First line contains information of contents. 
+        Header comment lines: First line contains information of contents.
                               Second contains Pyscf information.
     """
     header_lines = []
@@ -145,11 +145,11 @@ def write_cube_header_lines(cube_information):
 
 def write_formatted_cube_data_lines(grid, property_values_array):
     """This generates the Data lines for a formatted cube file.
-    
+
     Args:
         grid: grid object
-        property_values_array: 
-    
+        property_values_array: array containing the values, of shape (NX, NY, NZ).
+
     Returns:
         Data lines as list of formatted strings
     """
@@ -157,14 +157,16 @@ def write_formatted_cube_data_lines(grid, property_values_array):
     value_fortran_format = "{:13.5E}"
     for ix in range(grid.nx):
         for iy in range(grid.ny):
-            for iz in range(0,grid.nz,6):
-                remainder  = (grid.nz-iz)
-                if (remainder > 6 ):
+            for iz in range(0, grid.nz, 6):
+                remainder = (grid.nz-iz)
+                if remainder > 6:
                     line_format = value_fortran_format * 6
-                    data_lines.append(line_format.format(*property_values_array[ix,iy,iz:iz+6].tolist()))
+                    data_lines.append(line_format.format(*property_values_array[ix, iy,
+                                                                                iz:iz+6].tolist()))
                 else:
                     line_format = value_fortran_format * remainder
-                    data_lines.append(line_format.format(*property_values_array[ix,iy,iz:iz+remainder].tolist()))
+                    data_lines.append(line_format.format(*property_values_array[ix, iy,
+                                                                                iz:iz+remainder].tolist()))
                     break
     return data_lines
 
@@ -172,10 +174,10 @@ def write_unformatted_cube_data_lines(property_value_array_with_coords):
     """This writes the property lines for the unformatted cube file.
     Data format is:
         x y z value
-    
+
     Args:
         property_value_array_with_coords: (N,4) array. N data values. rows are (x, y, z, value).
-        
+
     Returns:
         Data lines as list of formatted strings.
     """
@@ -184,16 +186,17 @@ def write_unformatted_cube_data_lines(property_value_array_with_coords):
     for i in range(len(property_value_array_with_coords)):
         data_lines.append(line_fortran_format.format(*property_value_array_with_coords[i]))
     return data_lines
-    
+
 
 def write_formatted_cube_file(filename, cube_information, grid, property_values_array):
     """This writes the information to a formatted cube file.
-    
+
     Args:
         filename: file to write to.
         cube_information: description of data in cube file.
-        grid:
-        property_values_array:
+        grid: grid object for molecule, containing the grid coordinates
+        property_values_array: array containing the property value data, in array
+                               of shape (NX,NY,NZ).
     """
     with open(filename, 'w') as outfile:
         header_lines = write_cube_header_lines(cube_information)
@@ -211,13 +214,13 @@ def write_formatted_cube_file(filename, cube_information, grid, property_values_
 
 def write_unformatted_cube_file(filename, cube_information, grid, property_value_array_with_coords):
     """This writes the information to an unformatted cube file.
-    
+
     Args:
-        filename:
-        cube_iunformation:
-        grid:
-        property_value_array_with_coords:
-    
+        filename: file to write to.
+        cube_information: description of data in cube file.
+        grid: grid object for molecule, containing the grid coordinates
+        property_value_array_with_coords: (N,4) array containing the data points.
+                                          N data values. Rows are of format (x, y, z, value).
     """
     with open(filename, 'w') as outfile:
         header_lines = write_cube_header_lines(cube_information)
